@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Testing Report Portal
 
 External web portal for viewing breaker testing reports.
