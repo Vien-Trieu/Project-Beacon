@@ -7,19 +7,18 @@ export type Report = {
   pdfUrl: string;
 };
 
-const mockReports: Record<string, Report> = {
-  abc: {
-    publicId: "abc",
-    deviceSerial: "EMAX-001",
-    salesOrder: "SO-12345",
-    status: "Pass",
-    filename: "Emax2 LV CB Test Report.pdf",
-    pdfUrl: "/Emax2 LV CB Test Report.pdf",
-  },
-};
-
 export async function getPublicReport(
   publicId: string
 ): Promise<Report | null> {
-  return mockReports[publicId] ?? null;
+  const response = await fetch(`/api/public/reports/${publicId}`);
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error("Failed to load report");
+  }
+
+  return response.json();
 }

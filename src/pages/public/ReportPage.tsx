@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import abbLogo from "../../assets/ABB_Logo.png";
 import ReportViewer from "../../components/reports/ReportViewer";
+import ReportNotFoundPage from "../errors/ReportNotFoundPage";
+
 import {
   getPublicReport,
   type Report,
 } from "../../services/reportService";
-import ReportNotFoundPage from "../errors/ReportNotFoundPage";
 
 function ReportPage() {
   const { publicId } = useParams();
@@ -34,9 +35,9 @@ function ReportPage() {
     return <p>Loading report...</p>;
   }
 
-if (!report) {
-  return <ReportNotFoundPage />;
-}
+  if (!report) {
+    return <ReportNotFoundPage />;
+  }
 
   return (
     <main>
@@ -46,6 +47,7 @@ if (!report) {
           alt="ABB"
           className="abb-logo"
         />
+
         <h1>Testing Report</h1>
       </header>
 
