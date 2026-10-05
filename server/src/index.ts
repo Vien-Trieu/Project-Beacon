@@ -1,19 +1,27 @@
 import express from "express";
 import publicReportsRouter from "./routes/publicReports.js";
 import { testDatabaseConnection } from "./services/database.js";
+import internalReportsRouter from "./routes/internalReports.js";
 
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+app.use(
+  express.json({
+    limit: "25mb",
+  })
+);
+
+app.use("/api/public/reports", publicReportsRouter);
+
+// Internal report ingestion route
+app.use("/api/internal/reports", internalReportsRouter);
 
 app.get("/", (_req, res) => {
   res.json({
     message: "Project Beacon API is running",
   });
 });
-
-app.use("/api/public/reports", publicReportsRouter);
 
 app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}`);

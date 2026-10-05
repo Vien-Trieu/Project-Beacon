@@ -5,7 +5,7 @@ CREATE TABLE reports (
 
     device_serial VARCHAR(100) NOT NULL,
 
-    sales_order VARCHAR(100),
+    sales_order VARCHAR(100) NOT NULL,
 
     status VARCHAR(20) NOT NULL,
 
