@@ -1,4 +1,3 @@
-import React from 'react';
 import abbLogo from "../../assets/ABB_Logo.png";
 const Header = () => {
     return (

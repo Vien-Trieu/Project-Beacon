@@ -13,6 +13,12 @@ app.use(
   })
 );
 
+app.use(
+  cors({
+    origin: process.env.PUBLIC_SITE_URL,
+  })
+);
+
 app.use("/api/public/reports", publicReportsRouter);
 
 // Internal report ingestion route
