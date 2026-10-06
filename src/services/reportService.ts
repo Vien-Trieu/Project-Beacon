@@ -24,5 +24,10 @@ export async function getPublicReport(
     throw new Error("Failed to load report");
   }
 
-  return response.json();
+  const report: Report = await response.json();
+
+  return {
+    ...report,
+    pdfUrl: apiUrl(report.pdfUrl),
+  };
 }
