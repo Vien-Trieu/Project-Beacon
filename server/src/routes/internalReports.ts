@@ -14,6 +14,14 @@ router.post("/", async (req, res) => {
         });
     }
 
+    const publicSiteUrl = process.env.PUBLIC_SITE_URL;
+
+    if (!publicSiteUrl) {
+        return res.status(500).json({
+            message: "PUBLIC_SITE_URL is not configured",
+        });
+    }
+
     const {
         deviceSerial,
         salesOrder,
@@ -36,7 +44,7 @@ router.post("/", async (req, res) => {
 
     if (!fileName.toLowerCase().endsWith(".pdf")) {
         return res.status(400).json({
-            message: "only PDF files are allowed"
+            message: "Only PDF files are allowed"
         })
     }
 
@@ -83,7 +91,7 @@ router.post("/", async (req, res) => {
                 [
                     publicId,
                     deviceSerial,
-                    salesOrder ?? null,
+                    salesOrder,
                     status,
                     fileName,
                     blobPath,
@@ -100,6 +108,7 @@ router.post("/", async (req, res) => {
 
         return res.status(201).json({
             publicId,
+            publicUrl: `${publicSiteUrl}/r/${publicId}`,
             message: "Report uploaded successfully",
         });
     } catch (error) {
