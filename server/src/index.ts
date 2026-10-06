@@ -2,6 +2,7 @@ import express from "express";
 import publicReportsRouter from "./routes/publicReports.js";
 import { testDatabaseConnection } from "./services/database.js";
 import internalReportsRouter from "./routes/internalReports.js";
+import cors from "cors";
 
 const app = express();
 const PORT = process.env.PORT || 3000;

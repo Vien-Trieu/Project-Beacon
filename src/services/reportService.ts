@@ -1,3 +1,5 @@
+import { apiUrl } from "./apiClient";
+
 export type Report = {
   publicId: string;
   deviceSerial: string;
@@ -10,7 +12,9 @@ export type Report = {
 export async function getPublicReport(
   publicId: string
 ): Promise<Report | null> {
-  const response = await fetch(`/api/public/reports/${publicId}`);
+  const response = await fetch(
+    apiUrl(`/api/public/reports/${publicId}`)
+  );
 
   if (response.status === 404) {
     return null;
