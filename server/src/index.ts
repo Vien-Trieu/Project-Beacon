@@ -1,5 +1,6 @@
 import express from "express";
 import publicReportsRouter from "./routes/publicReports.js";
+import employeeReportsRouter from "./routes/employeeReports.js";
 import { testDatabaseConnection } from "./services/database.js";
 import internalReportsRouter from "./routes/internalReports.js";
 import cors from "cors";
@@ -20,6 +21,11 @@ app.use(
 );
 
 app.use("/api/public/reports", publicReportsRouter);
+
+app.use(
+  "/api/employee/reports",
+  employeeReportsRouter
+);
 
 // Internal report ingestion route
 app.use("/api/internal/reports", internalReportsRouter);
