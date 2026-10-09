@@ -1,5 +1,7 @@
 import { useState, type SyntheticEvent } from "react";
 import { uploadEmployeeReport } from "../../services/uploadReportService";
+import abbLogo from "../../assets/ABB_Logo.png";
+import "../../styles/employee-upload.css";
 
 function UploadReportPage() {
   const [deviceSerial, setDeviceSerial] = useState("");
@@ -51,109 +53,159 @@ function UploadReportPage() {
   }
 
   return (
-    <main>
-      <h1>Upload Test Report</h1>
-
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="deviceSerial">
-            Device Serial
-          </label>
-
-          <input
-            id="deviceSerial"
-            type="text"
-            value={deviceSerial}
-            onChange={(event) =>
-              setDeviceSerial(event.target.value)
-            }
-            required
+    <main className="upload-page">
+      <header className="upload-header">
+        <div className="upload-header-content">
+          <img
+            src={abbLogo}
+            alt="ABB"
+            className="upload-logo"
           />
+
+          <div>
+            <p className="upload-eyebrow">
+              Project Beacon
+            </p>
+
+            <h1>Employee Portal</h1>
+
+            <p className="upload-subtitle">
+              Manual test report upload
+            </p>
+          </div>
         </div>
+      </header>
 
-        <div>
-          <label htmlFor="salesOrder">
-            Sales Order
-          </label>
+      <section className="upload-content">
+        <div className="upload-card">
+          <div className="upload-card-heading">
+            <h2>Upload Test Report</h2>
 
-          <input
-            id="salesOrder"
-            type="text"
-            value={salesOrder}
-            onChange={(event) =>
-              setSalesOrder(event.target.value)
-            }
-            required
-          />
-        </div>
+            <p>
+              Enter the report information and select the finalized PDF.
+            </p>
+          </div>
 
-        <div>
-          <label htmlFor="status">
-            Status
-          </label>
-
-          <select
-            id="status"
-            value={status}
-            onChange={(event) =>
-              setStatus(
-                event.target.value as "Pass" | "Fail"
-              )
-            }
+          <form
+            onSubmit={handleSubmit}
+            className="upload-form"
           >
-            <option value="Pass">Pass</option>
-            <option value="Fail">Fail</option>
-          </select>
+            <div className="upload-form-grid">
+              <div className="upload-field">
+                <label htmlFor="deviceSerial">
+                  Device Serial
+                </label>
+
+                <input
+                  id="deviceSerial"
+                  type="text"
+                  value={deviceSerial}
+                  onChange={(event) =>
+                    setDeviceSerial(event.target.value)
+                  }
+                  placeholder="Enter device serial"
+                  required
+                />
+              </div>
+
+              <div className="upload-field">
+                <label htmlFor="salesOrder">
+                  Sales Order
+                </label>
+
+                <input
+                  id="salesOrder"
+                  type="text"
+                  value={salesOrder}
+                  onChange={(event) =>
+                    setSalesOrder(event.target.value)
+                  }
+                  placeholder="Enter sales order"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="upload-field">
+              <label htmlFor="status">
+                Status
+              </label>
+
+              <select
+                id="status"
+                value={status}
+                onChange={(event) =>
+                  setStatus(
+                    event.target.value as "Pass" | "Fail"
+                  )
+                }
+              >
+                <option value="Pass">Pass</option>
+                <option value="Fail">Fail</option>
+              </select>
+            </div>
+
+            <div className="upload-field">
+              <label htmlFor="pdfFile">
+                Test Report PDF
+              </label>
+
+              <input
+                id="pdfFile"
+                type="file"
+                accept="application/pdf"
+                onChange={(event) => {
+                  const selectedFile =
+                    event.target.files?.[0] ?? null;
+
+                  setFile(selectedFile);
+                }}
+                required
+              />
+
+              {file && (
+                <p className="selected-file">
+                  Selected: {file.name}
+                </p>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              className="upload-button"
+              disabled={uploading}
+            >
+              {uploading
+                ? "Uploading Report..."
+                : "Upload Report"}
+            </button>
+          </form>
+
+          {error && (
+            <div className="upload-message upload-error">
+              {error}
+            </div>
+          )}
+
+          {publicUrl && (
+            <div className="upload-message upload-success">
+              <h3>Report Uploaded Successfully</h3>
+
+              <p>
+                The customer report is ready.
+              </p>
+
+              <a
+                href={publicUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open Customer Report
+              </a>
+            </div>
+          )}
         </div>
-
-        <div>
-          <label htmlFor="pdfFile">
-            PDF File
-          </label>
-
-          <input
-            id="pdfFile"
-            type="file"
-            accept="application/pdf"
-            onChange={(event) => {
-              const selectedFile =
-                event.target.files?.[0] ?? null;
-
-              setFile(selectedFile);
-            }}
-            required
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={uploading}
-        >
-          {uploading
-            ? "Uploading..."
-            : "Upload Report"}
-        </button>
-      </form>
-
-      {error && <p>{error}</p>}
-
-      {publicUrl && (
-        <div>
-          <h2>
-            Report Uploaded Successfully
-          </h2>
-
-          <p>Customer URL:</p>
-
-          <a
-            href={publicUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {publicUrl}
-          </a>
-        </div>
-      )}
+      </section>
     </main>
   );
 }
