@@ -5,6 +5,7 @@ type UploadReportRequest = {
   salesOrder: string;
   status: "Pass" | "Fail";
   file: File;
+  accessToken: string;
 };
 
 type UploadReportResponse = {
@@ -48,6 +49,7 @@ export async function uploadEmployeeReport({
   salesOrder,
   status,
   file,
+  accessToken,
 }: UploadReportRequest): Promise<UploadReportResponse> {
   const fileContentBase64 = await fileToBase64(file);
 
@@ -55,9 +57,12 @@ export async function uploadEmployeeReport({
     apiUrl("/api/employee/reports"),
     {
       method: "POST",
+
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
       },
+
       body: JSON.stringify({
         deviceSerial,
         salesOrder,

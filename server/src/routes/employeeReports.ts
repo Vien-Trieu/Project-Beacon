@@ -1,9 +1,15 @@
 import { Router } from "express";
 import { ingestReport } from "../services/reportIngestion.js";
+import {
+  requireEmployeeAuth,
+} from "../middleware/requireEmployeeAuth.js";
 
 const router = Router();
 
-router.post("/", async (req, res) => {
+router.post(
+  "/",
+  requireEmployeeAuth,
+  async (req, res) => {
     // TEMPORARY:
     // Manual employee uploads are only enabled
     // when explicitly allowed in the environment.

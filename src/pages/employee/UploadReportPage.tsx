@@ -1,9 +1,19 @@
+import { useMsal } from "@azure/msal-react";
+import {
+  InteractionRequiredAuthError,
+} from "@azure/msal-browser";
+
+import {
+  beaconTokenRequest,
+} from "../../auth/msalConfig";
+
 import { useState, type SyntheticEvent } from "react";
 import { uploadEmployeeReport } from "../../services/uploadReportService";
 import abbLogo from "../../assets/ABB_Logo.png";
 import "../../styles/employee-upload.css";
 
 function UploadReportPage() {
+  const { instance, accounts } = useMsal();
   const [deviceSerial, setDeviceSerial] = useState("");
   const [salesOrder, setSalesOrder] = useState("");
   const [status, setStatus] = useState<"Pass" | "Fail">("Pass");
@@ -29,18 +39,52 @@ function UploadReportPage() {
     }
 
     try {
-      setUploading(true);
-      setError("");
-      setPublicUrl("");
+  setUploading(true);
+  setError("");
+  setPublicUrl("");
 
-      const result = await uploadEmployeeReport({
-        deviceSerial,
-        salesOrder,
-        status,
-        file,
+  const account = accounts[0];
+
+  if (!account) {
+    setError("You must sign in with your ABB account.");
+    return;
+  }
+
+  let accessToken: string;
+
+  try {
+    const tokenResponse =
+      await instance.acquireTokenSilent({
+        ...beaconTokenRequest,
+        account,
       });
 
-      setPublicUrl(result.publicUrl);
+    accessToken = tokenResponse.accessToken;
+  } catch (tokenError) {
+    if (
+      tokenError instanceof InteractionRequiredAuthError
+    ) {
+      const tokenResponse =
+        await instance.acquireTokenPopup({
+          ...beaconTokenRequest,
+          account,
+        });
+
+      accessToken = tokenResponse.accessToken;
+    } else {
+      throw tokenError;
+    }
+  }
+
+  const result = await uploadEmployeeReport({
+    deviceSerial,
+    salesOrder,
+    status,
+    file,
+    accessToken,
+  });
+
+  setPublicUrl(result.publicUrl);
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message);
