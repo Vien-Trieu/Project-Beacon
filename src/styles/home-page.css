@@ -5,6 +5,10 @@
   font-family: Inter, Arial, Helvetica, sans-serif;
 }
 
+/* =========================
+   HEADER
+   ========================= */
+
 .home-header {
   background: #ffffff;
   border-bottom: 1px solid #e3e6ea;
@@ -14,6 +18,21 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 28px 32px;
+
+  display: flex;
+  align-items: center;
+
+  /* NEW */
+  justify-content: space-between;
+
+  gap: 28px;
+}
+
+/* NEW
+   Keeps ABB logo + Project Beacon text together
+   on the left side of the header.
+*/
+.home-brand {
   display: flex;
   align-items: center;
   gap: 28px;
@@ -43,6 +62,56 @@
   color: #66707a;
 }
 
+/* =========================
+   EMPLOYEE LOGIN BUTTON
+   ========================= */
+
+.employee-login-button {
+  flex-shrink: 0;
+
+  border: 1px solid #d7dce3;
+  background: #ffffff;
+  color: #111827;
+
+  padding: 10px 18px;
+
+  border-radius: 6px;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.employee-login-button:hover {
+  background: #f7f7f8;
+  border-color: #b9c0ca;
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.employee-login-button:active {
+  transform: translateY(0);
+}
+
+.employee-login-button:focus-visible {
+  outline: 3px solid rgba(255, 0, 0, 0.18);
+  outline-offset: 2px;
+}
+
+/* =========================
+   HERO
+   ========================= */
+
 .home-hero {
   background: #ffffff;
   border-bottom: 1px solid #e3e6ea;
@@ -52,17 +121,21 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 72px 32px;
+
   display: grid;
   grid-template-columns: 1.5fr 0.8fr;
   align-items: center;
+
   gap: 70px;
 }
 
 .home-section-label {
   margin: 0 0 12px;
   color: #e30613;
+
   font-size: 0.78rem;
   font-weight: 700;
+
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -70,25 +143,38 @@
 .home-hero-text h2 {
   max-width: 700px;
   margin: 0;
+
   font-size: clamp(2.4rem, 5vw, 4.5rem);
   line-height: 1.02;
+
   letter-spacing: -0.04em;
 }
 
 .home-hero-description {
   max-width: 680px;
+
   margin: 25px 0 0;
+
   color: #66707a;
+
   font-size: 1.08rem;
   line-height: 1.7;
 }
 
+/* =========================
+   QR CARD
+   ========================= */
+
 .home-qr-card {
   background: #f7f8fa;
+
   border: 1px solid #e1e4e8;
   border-radius: 16px;
+
   padding: 34px;
+
   text-align: center;
+
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
 }
 
@@ -99,20 +185,27 @@
 
 .home-qr-card p {
   margin: 0;
+
   color: #68727d;
+
   line-height: 1.6;
 }
 
 .home-qr-icon {
   width: 100px;
   height: 100px;
+
   margin: 0 auto;
   padding: 12px;
+
   display: grid;
   grid-template-columns: 1fr 1fr;
+
   gap: 10px;
+
   border: 4px solid #1f2933;
   border-radius: 10px;
+
   background: #ffffff;
 }
 
@@ -125,31 +218,45 @@
   border-color: #e30613;
 }
 
+/* =========================
+   INFO CARDS
+   ========================= */
+
 .home-info {
   max-width: 1200px;
+
   margin: 0 auto;
+
   padding: 52px 32px;
 }
 
 .home-info-grid {
   display: grid;
+
   grid-template-columns: repeat(3, 1fr);
+
   gap: 22px;
 }
 
 .home-info-card {
   background: #ffffff;
+
   border: 1px solid #e3e6ea;
   border-radius: 12px;
+
   padding: 28px;
+
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
 }
 
 .home-info-number {
   margin-bottom: 26px;
+
   color: #e30613;
+
   font-size: 0.78rem;
   font-weight: 800;
+
   letter-spacing: 0.12em;
 }
 
@@ -160,21 +267,32 @@
 
 .home-info-card p {
   margin: 10px 0 0;
+
   color: #68727d;
+
   line-height: 1.6;
 }
 
+/* =========================
+   NOTE
+   ========================= */
+
 .home-note {
   max-width: 1200px;
+
   margin: 0 auto;
+
   padding: 0 32px 52px;
 }
 
 .home-note-content {
   padding: 26px 30px;
+
   background: #ffffff;
+
   border-left: 4px solid #e30613;
   border-radius: 8px;
+
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
 }
 
@@ -185,19 +303,36 @@
 
 .home-note-content p {
   margin: 8px 0 0;
+
   color: #68727d;
 }
 
+/* =========================
+   FOOTER
+   ========================= */
+
 .home-footer {
   padding: 24px 32px 34px;
+
   color: #7a828a;
+
   font-size: 0.8rem;
+
   text-align: center;
 }
+
+/* =========================
+   MOBILE
+   ========================= */
 
 @media (max-width: 800px) {
   .home-header-content {
     padding: 22px 18px;
+    gap: 16px;
+  }
+
+  .home-brand {
+    gap: 16px;
   }
 
   .home-logo {
@@ -208,9 +343,16 @@
     font-size: 1.6rem;
   }
 
+  .employee-login-button {
+    padding: 9px 13px;
+    font-size: 13px;
+  }
+
   .home-hero-content {
     padding: 45px 20px;
+
     grid-template-columns: 1fr;
+
     gap: 35px;
   }
 
@@ -224,5 +366,33 @@
 
   .home-note {
     padding: 0 18px 35px;
+  }
+}
+
+/* Extra-small phones */
+@media (max-width: 520px) {
+  .home-header-content {
+    align-items: flex-start;
+  }
+
+  .home-brand {
+    gap: 12px;
+  }
+
+  .home-logo {
+    width: 70px;
+  }
+
+  .home-header h1 {
+    font-size: 1.25rem;
+  }
+
+  .home-eyebrow {
+    font-size: 0.68rem;
+  }
+
+  .employee-login-button {
+    padding: 8px 10px;
+    font-size: 12px;
   }
 }
