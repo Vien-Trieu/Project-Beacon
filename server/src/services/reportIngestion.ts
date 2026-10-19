@@ -49,6 +49,12 @@ export async function ingestReport({
         throw new Error("PUBLIC_SITE_URL is not configured");
     }
 
+    const normalizedDeviceSerial = deviceSerial.trim();
+
+    if (!normalizedDeviceSerial) {
+        throw new Error("Device serial is required");
+    }
+
     const safeFileName = fileName.replace(
         /[^a-zA-Z0-9._-]/g,
         "_"
@@ -63,7 +69,16 @@ export async function ingestReport({
         throw new Error("PDF file is empty");
     }
 
-    // Check whether this device already has an active public report.
+    /*
+     * Check whether this device already has an active
+     * customer-facing report.
+     *
+     * Device serial comparison is case-insensitive and
+     * ignores leading/trailing spaces.
+     *
+     * The oldest matching row is treated as the permanent
+     * customer record so its public_id / QR URL is preserved.
+     */
     const existingResult = await pool.query<ExistingReport>(
         `
         SELECT
@@ -72,12 +87,12 @@ export async function ingestReport({
             filename,
             blob_path
         FROM reports
-        WHERE device_serial = $1
+        WHERE LOWER(BTRIM(device_serial)) = LOWER(BTRIM($1))
           AND active = true
-        ORDER BY created_at DESC
+        ORDER BY created_at ASC
         LIMIT 1
         `,
-        [deviceSerial]
+        [normalizedDeviceSerial]
     );
 
     const existingReport = existingResult.rows[0];
@@ -85,9 +100,14 @@ export async function ingestReport({
     /*
      * EXISTING REPORT
      *
-     * Rev1, Rev2, Rev3, etc. update the existing record.
-     * Most importantly, public_id remains unchanged,
-     * so the customer's QR code / URL never changes.
+     * Example:
+     *
+     * CG71141582_Rev0.pdf
+     *      ↓
+     * CG71141582_Rev1.pdf
+     *
+     * Keep the same public_id and therefore the same
+     * permanent customer URL.
      */
     if (existingReport) {
         const publicId = existingReport.public_id;
@@ -98,7 +118,13 @@ export async function ingestReport({
         const currentRevision =
             getRevisionNumber(existingReport.filename);
 
-        // Protect against an older revision replacing a newer one.
+        /*
+         * Prevent an older revision from replacing
+         * a newer revision.
+         *
+         * Equal revisions ARE allowed so the same revision
+         * can be regenerated if necessary.
+         */
         if (
             incomingRevision !== null &&
             currentRevision !== null &&
@@ -116,12 +142,17 @@ export async function ingestReport({
         const blobPath =
             `${publicId}/${safeFileName}`;
 
+        /*
+         * Upload the new/re-generated PDF.
+         *
+         * upsert=true also allows regeneration of the
+         * exact same revision/filename.
+         */
         const { error: uploadError } =
             await supabase.storage
                 .from("reports")
                 .upload(blobPath, pdfBuffer, {
                     contentType: "application/pdf",
-                    // Allows regeneration of the same revision too.
                     upsert: true,
                 });
 
@@ -136,13 +167,15 @@ export async function ingestReport({
                 `
                 UPDATE reports
                 SET
-                    sales_order = $1,
-                    status = $2,
-                    filename = $3,
-                    blob_path = $4
-                WHERE id = $5
+                    device_serial = $1,
+                    sales_order = $2,
+                    status = $3,
+                    filename = $4,
+                    blob_path = $5
+                WHERE id = $6
                 `,
                 [
+                    normalizedDeviceSerial,
                     salesOrder,
                     status,
                     fileName,
@@ -158,11 +191,9 @@ export async function ingestReport({
             }
         } catch (databaseError) {
             /*
-             * If this was a NEW storage path and the database
-             * update failed, clean up the newly uploaded file.
-             *
-             * Do not remove it when the path is identical,
-             * because that would also remove the existing report.
+             * If the new revision used a different storage
+             * path but the database update failed, remove the
+             * newly uploaded PDF so we don't leave an orphan.
              */
             if (
                 existingReport.blob_path !== blobPath
@@ -176,8 +207,17 @@ export async function ingestReport({
         }
 
         /*
-         * Database now points at the new PDF.
-         * The old storage object is no longer needed.
+         * The database now points to the newest PDF.
+         *
+         * Remove the previous revision from Supabase Storage.
+         *
+         * Example:
+         *
+         * Delete:
+         * CG71141582_Rev0.pdf
+         *
+         * Keep:
+         * CG71141582_Rev1.pdf
          */
         if (
             existingReport.blob_path &&
@@ -191,8 +231,10 @@ export async function ingestReport({
                     ]);
 
             if (removeError) {
-                // Don't fail the report update just because
-                // cleanup of the old PDF failed.
+                /*
+                 * Don't break the successful revision update
+                 * just because cleanup of the old PDF failed.
+                 */
                 console.warn(
                     "Old PDF cleanup failed:",
                     removeError.message
@@ -202,10 +244,8 @@ export async function ingestReport({
 
         return {
             publicId,
-            publicUrl:
-                `${publicSiteUrl}/r/${publicId}`,
-            message:
-                "Report revision updated successfully",
+            publicUrl: `${publicSiteUrl}/r/${publicId}`,
+            message: "Report revision updated successfully",
         };
     }
 
@@ -213,7 +253,7 @@ export async function ingestReport({
      * NEW REPORT
      *
      * No active report exists for this device serial,
-     * so create a new permanent public ID.
+     * so create its permanent public ID.
      */
     const publicId = crypto.randomUUID();
 
@@ -249,7 +289,7 @@ export async function ingestReport({
             `,
             [
                 publicId,
-                deviceSerial,
+                normalizedDeviceSerial,
                 salesOrder,
                 status,
                 fileName,
@@ -257,6 +297,10 @@ export async function ingestReport({
             ]
         );
     } catch (databaseError) {
+        /*
+         * If the database insert fails, remove the PDF
+         * that was just uploaded.
+         */
         await supabase.storage
             .from("reports")
             .remove([blobPath]);
@@ -266,8 +310,7 @@ export async function ingestReport({
 
     return {
         publicId,
-        publicUrl:
-            `${publicSiteUrl}/r/${publicId}`,
+        publicUrl: `${publicSiteUrl}/r/${publicId}`,
         message: "Report uploaded successfully",
     };
 }
