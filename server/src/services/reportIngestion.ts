@@ -49,7 +49,17 @@ export async function ingestReport({
         throw new Error("PUBLIC_SITE_URL is not configured");
     }
 
-    const normalizedDeviceSerial = deviceSerial.trim();
+    const fileSerialMatch = fileName.match(/^(.*?)_Rev\d+\.pdf$/i);
+
+    const normalizedDeviceSerial =
+        fileSerialMatch?.[1]?.trim() || deviceSerial.trim();
+
+    console.log("INGEST DEBUG:", {
+        deviceSerial,
+        fileName,
+        fileSerialMatch: fileSerialMatch?.[1] ?? null,
+        normalizedDeviceSerial,
+    });
 
     if (!normalizedDeviceSerial) {
         throw new Error("Device serial is required");
@@ -80,23 +90,30 @@ export async function ingestReport({
      * customer record so its public_id / QR URL is preserved.
      */
     const existingResult = await pool.query<ExistingReport>(
-        `
+    `
         SELECT
             id,
             public_id,
             filename,
             blob_path
         FROM reports
-        WHERE LOWER(BTRIM(device_serial)) = LOWER(BTRIM($1))
-          AND active = true
+        WHERE active = true
+        AND (
+            LOWER(BTRIM(device_serial)) = LOWER(BTRIM($1))
+            OR LOWER(filename) LIKE LOWER($1 || '_Rev%.pdf')
+        )
         ORDER BY created_at ASC
         LIMIT 1
         `,
         [normalizedDeviceSerial]
     );
-
+    
     const existingReport = existingResult.rows[0];
 
+    console.log(
+    "EXISTING REPORT DEBUG:",
+    existingReport ?? "NONE FOUND"
+    );
     /*
      * EXISTING REPORT
      *
