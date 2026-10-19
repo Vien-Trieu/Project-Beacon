@@ -39,7 +39,7 @@ function HomePage() {
 
             <div>
               <p className="home-eyebrow">
-                Project Beacon
+                Customer Test Report
               </p>
 
               <h1>Test Report Portal</h1>
@@ -120,7 +120,7 @@ function HomePage() {
             <h3>View</h3>
 
             <p>
-              Your unique Project Beacon report page opens
+              Your unique Customer Test Report report page opens
               directly.
             </p>
           </article>
@@ -157,7 +157,7 @@ function HomePage() {
       {/* Footer */}
       <footer className="home-footer">
         <p>
-          Project Beacon · ABB Test Report Portal
+          Customer Test Report · ABB Test Report Portal
         </p>
       </footer>
     </main>

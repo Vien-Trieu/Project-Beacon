@@ -71,7 +71,7 @@ function DashboardPage() {
 
             <div>
               <p className="dashboard-eyebrow">
-                Project Beacon
+                Customer Test Report
               </p>
 
               <h1>Employee Portal</h1>
@@ -234,7 +234,8 @@ function DashboardPage() {
 
                 <p>
                   View and search reports already
-                  published through Project Beacon.
+                  published through the Customer
+                  Test Report.
                 </p>
 
                 <span className="dashboard-action-link">
@@ -265,8 +266,8 @@ function DashboardPage() {
                 </h4>
 
                 <p>
-                  Open the public Project Beacon
-                  customer experience in a new tab.
+                  Open the public customer experience 
+                  in a new tab.
                 </p>
 
                 <span className="dashboard-action-link">
@@ -297,7 +298,7 @@ function DashboardPage() {
       </div>
 
       <footer className="dashboard-footer">
-        Project Beacon · ABB Test Report Portal
+        Customer Test Report · ABB Test Report Portal
       </footer>
     </main>
   );

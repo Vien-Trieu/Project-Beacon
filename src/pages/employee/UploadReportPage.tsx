@@ -108,7 +108,7 @@ function UploadReportPage() {
 
           <div>
             <p className="upload-eyebrow">
-              Project Beacon
+              Customer Test Report
             </p>
 
             <h1>Employee Portal</h1>

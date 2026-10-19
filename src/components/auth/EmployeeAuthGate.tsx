@@ -46,7 +46,7 @@ function EmployeeAuthGate({
 
             <div>
               <p className="employee-login-eyebrow">
-                Project Beacon
+                Customer Test Report
               </p>
 
               <p className="employee-login-product">
@@ -69,7 +69,7 @@ function EmployeeAuthGate({
             <p className="employee-login-description">
               Secure employee access for publishing and
               managing ABB customer test reports through
-              Project Beacon.
+              Customer Test Report.
             </p>
           </div>
 
@@ -118,7 +118,7 @@ function EmployeeAuthGate({
           </div>
 
           <p className="employee-login-copyright">
-            Project Beacon · ABB Test Report Portal
+            Customer Test Report · ABB Test Report Portal
           </p>
         </section>
 
@@ -134,7 +134,7 @@ function EmployeeAuthGate({
 
             <p className="employee-login-card-description">
               Sign in with your ABB Microsoft account to
-              access the Project Beacon employee portal.
+              access the Customer Test Report employee portal.
             </p>
 
             <button

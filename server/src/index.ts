@@ -32,7 +32,7 @@ app.use("/api/internal/reports", internalReportsRouter);
 
 app.get("/", (_req, res) => {
   res.json({
-    message: "Project Beacon API is running",
+    message: "Customer Test Report API is running",
   });
 });
 

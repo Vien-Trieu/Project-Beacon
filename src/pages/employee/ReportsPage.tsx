@@ -316,7 +316,7 @@ function ReportsPage() {
 
             <div>
               <p className="reports-eyebrow">
-                Project Beacon
+                Customer Test Report
               </p>
 
               <h1>Test Reports</h1>
@@ -361,7 +361,7 @@ function ReportsPage() {
           </h2>
 
           <p>
-            Search Project Beacon by device
+            Search Customer Test Report by device
             serial, sales order, filename,
             or report identifier.
           </p>
@@ -480,7 +480,7 @@ function ReportsPage() {
             </h3>
 
             <p>
-              Retrieving Project Beacon
+              Retrieving Customer Test Report
               report data.
             </p>
           </div>
@@ -627,7 +627,7 @@ function ReportsPage() {
       </div>
 
       <footer className="reports-footer">
-        Project Beacon · ABB Test Report
+        Customer Test Report · ABB Test Report
         Portal
       </footer>
     </main>

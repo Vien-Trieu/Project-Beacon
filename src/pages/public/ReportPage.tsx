@@ -78,7 +78,7 @@ function ReportPage() {
 
           <div>
             <p className="report-eyebrow">
-              Project Beacon
+              Customer Test Report
             </p>
 
             <h1>Test Report</h1>
@@ -168,7 +168,7 @@ function ReportPage() {
 
       <footer className="report-footer">
         <p>
-          ABB Inc. • Project Beacon
+          ABB Inc. • Customer Test Report
         </p>
       </footer>
     </main>
