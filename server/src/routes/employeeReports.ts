@@ -149,9 +149,6 @@ router.post(
   "/",
   requireEmployeeAuth,
   async (req, res) => {
-    // TEMPORARY:
-    // Manual employee uploads are only enabled
-    // when explicitly allowed in the environment.
     if (
       process.env.ENABLE_EMPLOYEE_UPLOAD !==
       "true"
@@ -220,6 +217,224 @@ router.post(
     } catch (error) {
       console.error(
         "Employee report upload failed:",
+        error
+      );
+
+      return res.status(500).json({
+        message:
+          "Internal server error",
+      });
+    }
+  }
+);
+
+/* =========================================================
+   GET SINGLE EMPLOYEE REPORT
+   ========================================================= */
+
+router.get(
+  "/:publicId",
+  requireEmployeeAuth,
+  async (req, res) => {
+    const { publicId } = req.params;
+
+    try {
+      const result = await pool.query(
+        `
+        SELECT
+          public_id,
+          device_serial,
+          sales_order,
+          status,
+          filename,
+          created_at,
+          updated_at
+        FROM reports
+        WHERE public_id = $1
+          AND active = true
+        LIMIT 1
+        `,
+        [publicId]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          message: "Report not found",
+        });
+      }
+
+      const report = result.rows[0];
+
+      return res.json({
+        report: {
+          publicId: report.public_id,
+          deviceSerial:
+            report.device_serial,
+          salesOrder:
+            report.sales_order,
+          status:
+            report.status,
+          filename:
+            report.filename,
+          createdAt:
+            report.created_at,
+          updatedAt:
+            report.updated_at,
+        },
+      });
+    } catch (error) {
+      console.error(
+        "Failed to retrieve employee report:",
+        error
+      );
+
+      return res.status(500).json({
+        message: "Internal server error",
+      });
+    }
+  }
+);
+
+/* =========================================================
+   EDIT EMPLOYEE REPORT
+   ========================================================= */
+
+router.patch(
+  "/:publicId",
+  requireEmployeeAuth,
+  async (req, res) => {
+    const { publicId } = req.params;
+
+    const {
+      salesOrder,
+      status,
+    } = req.body;
+
+    if (!salesOrder || !status) {
+      return res.status(400).json({
+        message:
+          "Missing required fields",
+      });
+    }
+
+    if (
+      status !== "Pass" &&
+      status !== "Fail"
+    ) {
+      return res.status(400).json({
+        message:
+          "Invalid report status",
+      });
+    }
+
+    try {
+      const result = await pool.query(
+        `
+        UPDATE reports
+        SET
+          sales_order = $1,
+          status = $2
+        WHERE public_id = $3
+          AND active = true
+        RETURNING
+          public_id,
+          device_serial,
+          sales_order,
+          status,
+          filename,
+          created_at,
+          updated_at
+        `,
+        [
+          salesOrder.trim(),
+          status,
+          publicId,
+        ]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          message: "Report not found",
+        });
+      }
+
+      const report = result.rows[0];
+
+      return res.json({
+        report: {
+          publicId:
+            report.public_id,
+          deviceSerial:
+            report.device_serial,
+          salesOrder:
+            report.sales_order,
+          status:
+            report.status,
+          filename:
+            report.filename,
+          createdAt:
+            report.created_at,
+          updatedAt:
+            report.updated_at,
+        },
+        message:
+          "Report updated successfully",
+      });
+    } catch (error) {
+      console.error(
+        "Failed to update employee report:",
+        error
+      );
+
+      return res.status(500).json({
+        message:
+          "Internal server error",
+      });
+    }
+  }
+);
+
+/* =========================================================
+   DEACTIVATE EMPLOYEE REPORT
+   ========================================================= */
+
+router.post(
+  "/:publicId/deactivate",
+  requireEmployeeAuth,
+  async (req, res) => {
+    const { publicId } = req.params;
+
+    try {
+      const result = await pool.query(
+        `
+        UPDATE reports
+        SET active = false
+        WHERE public_id = $1
+          AND active = true
+        RETURNING
+          public_id,
+          device_serial,
+          filename
+        `,
+        [publicId]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          message:
+            "Report not found or already deactivated",
+        });
+      }
+
+      return res.json({
+        publicId:
+          result.rows[0].public_id,
+        message:
+          "Report deactivated successfully",
+      });
+    } catch (error) {
+      console.error(
+        "Failed to deactivate employee report:",
         error
       );
 
