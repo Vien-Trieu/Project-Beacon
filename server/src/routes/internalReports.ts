@@ -1,24 +1,17 @@
 import { Router } from "express";
-import crypto from "crypto";
-import { pool } from "../services/database.js";
-import { supabase } from "../services/storage.js";
+import { ingestReport } from "../services/reportIngestion.js";
 
 const router = Router();
 
 router.post("/", async (req, res) => {
     const apiKey = req.headers["x-api-key"];
 
-    if (!apiKey || apiKey !== process.env.INGESTION_API_KEY) {
+    if (
+        !apiKey ||
+        apiKey !== process.env.INGESTION_API_KEY
+    ) {
         return res.status(401).json({
             message: "Unauthorized",
-        });
-    }
-
-    const publicSiteUrl = process.env.PUBLIC_SITE_URL;
-
-    if (!publicSiteUrl) {
-        return res.status(500).json({
-            message: "PUBLIC_SITE_URL is not configured",
         });
     }
 
@@ -42,77 +35,40 @@ router.post("/", async (req, res) => {
         });
     }
 
-    if (!fileName.toLowerCase().endsWith(".pdf")) {
+    if (
+        status !== "Pass" &&
+        status !== "Fail"
+    ) {
         return res.status(400).json({
-            message: "Only PDF files are allowed"
-        })
+            message: "Status must be Pass or Fail",
+        });
     }
 
-    const publicId = crypto.randomUUID();
+    if (
+        typeof fileName !== "string" ||
+        !fileName.toLowerCase().endsWith(".pdf")
+    ) {
+        return res.status(400).json({
+            message: "Only PDF files are allowed",
+        });
+    }
 
-    const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
-
-    const blobPath = `${publicId}/${safeFileName}`;
-
-    try{
-        const pdfBuffer = Buffer.from(
+    try {
+        const result = await ingestReport({
+            deviceSerial,
+            salesOrder,
+            status,
+            fileName,
             fileContentBase64,
-            "base64"
+        });
+
+        return res.status(201).json(result);
+    } catch (error) {
+        console.error(
+            "Internal report ingestion failed:",
+            error
         );
 
-        const { error: uploadError } = await supabase.storage
-        .from("reports")
-        .upload(blobPath,pdfBuffer, {
-            contentType: "application/pdf",
-            upsert: false,
-        });
-
-        if(uploadError) {
-            console.error("PDF upload failed:", uploadError);
-
-            return res.status(500).json({
-                message: "Failed to upload PDF",
-            });
-        }
-
-        try {
-            await pool.query(
-                `
-                INSERT INTO reports (
-                    public_id,
-                    device_serial,
-                    sales_order,
-                    status,
-                    filename,
-                    blob_path
-                )
-                VALUES ($1, $2, $3, $4, $5, $6)
-                `,
-                [
-                    publicId,
-                    deviceSerial,
-                    salesOrder,
-                    status,
-                    fileName,
-                    blobPath,
-                ]
-            );
-        } catch (databaseError) {
-            // Clean up the uploaded file if the DB insert fails.
-            await supabase.storage
-                .from("reports")
-                .remove([blobPath]);
-
-                throw databaseError;
-        }
-
-        return res.status(201).json({
-            publicId,
-            publicUrl: `${publicSiteUrl}/r/${publicId}`,
-            message: "Report uploaded successfully",
-        });
-    } catch (error) {
-        console.error("Internal report ingestion failed:", error);
         return res.status(500).json({
             message: "Internal server error",
         });
