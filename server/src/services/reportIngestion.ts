@@ -19,7 +19,7 @@ type IngestReportResult = {
 };
 
 type ExistingReport = {
-    id: number;
+    id: string | number;
     public_id: string;
     filename: string;
     blob_path: string;
@@ -46,23 +46,38 @@ export async function ingestReport({
         process.env.PUBLIC_SITE_URL?.replace(/\/+$/, "");
 
     if (!publicSiteUrl) {
-        throw new Error("PUBLIC_SITE_URL is not configured");
+        throw new Error(
+            "PUBLIC_SITE_URL is not configured"
+        );
     }
 
-    const fileSerialMatch = fileName.match(/^(.*?)_Rev\d+\.pdf$/i);
+    /*
+     * Prefer the device serial parsed from:
+     *
+     * ABC123_Rev0.pdf
+     * ABC123_Rev1.pdf
+     *
+     * → ABC123
+     */
+    const fileSerialMatch =
+        fileName.match(/^(.*?)_Rev\d+\.pdf$/i);
 
     const normalizedDeviceSerial =
-        fileSerialMatch?.[1]?.trim() || deviceSerial.trim();
+        fileSerialMatch?.[1]?.trim() ||
+        deviceSerial.trim();
 
     console.log("INGEST DEBUG:", {
         deviceSerial,
         fileName,
-        fileSerialMatch: fileSerialMatch?.[1] ?? null,
+        fileSerialMatch:
+            fileSerialMatch?.[1] ?? null,
         normalizedDeviceSerial,
     });
 
     if (!normalizedDeviceSerial) {
-        throw new Error("Device serial is required");
+        throw new Error(
+            "Device serial is required"
+        );
     }
 
     const safeFileName = fileName.replace(
@@ -76,102 +91,135 @@ export async function ingestReport({
     );
 
     if (pdfBuffer.length === 0) {
-        throw new Error("PDF file is empty");
+        throw new Error(
+            "PDF file is empty"
+        );
     }
 
     /*
-     * Check whether this device already has an active
-     * customer-facing report.
+     * Get ALL active reports for this device.
      *
-     * Device serial comparison is case-insensitive and
-     * ignores leading/trailing spaces.
+     * The oldest row becomes the permanent/canonical
+     * customer record because it owns the original
+     * publicId / QR URL.
      *
-     * The oldest matching row is treated as the permanent
-     * customer record so its public_id / QR URL is preserved.
+     * Any additional rows are accidental duplicates
+     * that can be cleaned up after a successful update.
      */
-    const existingResult = await pool.query<ExistingReport>(
-    `
-        SELECT
-            id,
-            public_id,
-            filename,
-            blob_path
-        FROM reports
-        WHERE active = true
-        AND (
-            LOWER(BTRIM(device_serial)) = LOWER(BTRIM($1))
-            OR LOWER(filename) LIKE LOWER($1 || '_Rev%.pdf')
-        )
-        ORDER BY created_at ASC
-        LIMIT 1
-        `,
-        [normalizedDeviceSerial]
-    );
-    
-    const existingReport = existingResult.rows[0];
+    const existingResult =
+        await pool.query<ExistingReport>(
+            `
+            SELECT
+                id,
+                public_id,
+                filename,
+                blob_path
+            FROM reports
+            WHERE LOWER(BTRIM(device_serial))
+                = LOWER(BTRIM($1))
+              AND active = true
+            ORDER BY created_at ASC
+            `,
+            [normalizedDeviceSerial]
+        );
+
+    const existingReports =
+        existingResult.rows;
+
+    const existingReport =
+        existingReports[0];
+
+    const duplicateReports =
+        existingReports.slice(1);
 
     console.log(
-    "EXISTING REPORT DEBUG:",
-    existingReport ?? "NONE FOUND"
+        "EXISTING REPORT DEBUG:",
+        existingReport ?? "NONE FOUND"
     );
+
+    console.log(
+        "DUPLICATE REPORT COUNT:",
+        duplicateReports.length
+    );
+
     /*
      * EXISTING REPORT
-     *
-     * Example:
-     *
-     * CG71141582_Rev0.pdf
-     *      ↓
-     * CG71141582_Rev1.pdf
-     *
-     * Keep the same public_id and therefore the same
-     * permanent customer URL.
      */
     if (existingReport) {
-        const publicId = existingReport.public_id;
+        const publicId =
+            existingReport.public_id;
 
         const incomingRevision =
             getRevisionNumber(fileName);
 
-        const currentRevision =
-            getRevisionNumber(existingReport.filename);
+        /*
+         * Look at every existing row, including any
+         * accidental duplicate records, and determine
+         * the highest revision currently known.
+         */
+        const existingRevisions =
+            existingReports
+                .map((report) =>
+                    getRevisionNumber(
+                        report.filename
+                    )
+                )
+                .filter(
+                    (
+                        revision
+                    ): revision is number =>
+                        revision !== null
+                );
+
+        const highestExistingRevision =
+            existingRevisions.length > 0
+                ? Math.max(
+                      ...existingRevisions
+                  )
+                : null;
 
         /*
-         * Prevent an older revision from replacing
-         * a newer revision.
+         * Never allow an older revision to replace
+         * a newer one.
          *
-         * Equal revisions ARE allowed so the same revision
-         * can be regenerated if necessary.
+         * Equal revisions are allowed so the same
+         * revision can be regenerated.
          */
         if (
             incomingRevision !== null &&
-            currentRevision !== null &&
-            incomingRevision < currentRevision
+            highestExistingRevision !== null &&
+            incomingRevision <
+                highestExistingRevision
         ) {
             return {
                 publicId,
-                publicUrl: `${publicSiteUrl}/r/${publicId}`,
+                publicUrl:
+                    `${publicSiteUrl}/r/${publicId}`,
                 message:
                     `Older revision ignored. ` +
-                    `Current revision is Rev${currentRevision}.`,
+                    `Latest revision is Rev${highestExistingRevision}.`,
             };
         }
 
+        /*
+         * Store the new revision under the ORIGINAL
+         * permanent publicId.
+         */
         const blobPath =
             `${publicId}/${safeFileName}`;
 
-        /*
-         * Upload the new/re-generated PDF.
-         *
-         * upsert=true also allows regeneration of the
-         * exact same revision/filename.
-         */
         const { error: uploadError } =
             await supabase.storage
                 .from("reports")
-                .upload(blobPath, pdfBuffer, {
-                    contentType: "application/pdf",
-                    upsert: true,
-                });
+                .upload(
+                    blobPath,
+                    pdfBuffer,
+                    {
+                        contentType:
+                            "application/pdf",
+                        upsert: true,
+                    }
+                );
 
         if (uploadError) {
             throw new Error(
@@ -179,66 +227,72 @@ export async function ingestReport({
             );
         }
 
+        /*
+         * Update the original/canonical database row.
+         */
         try {
-            const updateResult = await pool.query(
-                `
-                UPDATE reports
-                SET
-                    device_serial = $1,
-                    sales_order = $2,
-                    status = $3,
-                    filename = $4,
-                    blob_path = $5
-                WHERE id = $6
-                `,
-                [
-                    normalizedDeviceSerial,
-                    salesOrder,
-                    status,
-                    fileName,
-                    blobPath,
-                    existingReport.id,
-                ]
-            );
+            const updateResult =
+                await pool.query(
+                    `
+                    UPDATE reports
+                    SET
+                        device_serial = $1,
+                        sales_order = $2,
+                        status = $3,
+                        filename = $4,
+                        blob_path = $5
+                    WHERE id = $6
+                    `,
+                    [
+                        normalizedDeviceSerial,
+                        salesOrder,
+                        status,
+                        fileName,
+                        blobPath,
+                        existingReport.id,
+                    ]
+                );
 
-            if (updateResult.rowCount !== 1) {
+            if (
+                updateResult.rowCount !== 1
+            ) {
                 throw new Error(
                     "Existing report could not be updated"
                 );
             }
         } catch (databaseError) {
             /*
-             * If the new revision used a different storage
-             * path but the database update failed, remove the
-             * newly uploaded PDF so we don't leave an orphan.
+             * If DB update fails after uploading a
+             * brand-new storage path, remove that
+             * newly uploaded object.
              */
             if (
-                existingReport.blob_path !== blobPath
+                existingReport.blob_path !==
+                blobPath
             ) {
                 await supabase.storage
                     .from("reports")
-                    .remove([blobPath]);
+                    .remove([
+                        blobPath,
+                    ]);
             }
 
             throw databaseError;
         }
 
         /*
-         * The database now points to the newest PDF.
-         *
-         * Remove the previous revision from Supabase Storage.
+         * Remove the previous canonical revision.
          *
          * Example:
          *
-         * Delete:
-         * CG71141582_Rev0.pdf
-         *
-         * Keep:
-         * CG71141582_Rev1.pdf
+         * Rev5 arrives
+         * → database now points to Rev5
+         * → remove Rev4
          */
         if (
             existingReport.blob_path &&
-            existingReport.blob_path !== blobPath
+            existingReport.blob_path !==
+                blobPath
         ) {
             const { error: removeError } =
                 await supabase.storage
@@ -248,10 +302,6 @@ export async function ingestReport({
                     ]);
 
             if (removeError) {
-                /*
-                 * Don't break the successful revision update
-                 * just because cleanup of the old PDF failed.
-                 */
                 console.warn(
                     "Old PDF cleanup failed:",
                     removeError.message
@@ -259,20 +309,100 @@ export async function ingestReport({
             }
         }
 
+        /*
+         * SELF-HEAL ACCIDENTAL DUPLICATES
+         *
+         * Preserve the oldest/original row.
+         *
+         * Mark every newer duplicate inactive so
+         * customers/employees no longer see them.
+         */
+        if (
+            duplicateReports.length > 0
+        ) {
+            const duplicateIds =
+                duplicateReports.map(
+                    (report) =>
+                        report.id
+                );
+
+            await pool.query(
+                `
+                UPDATE reports
+                SET active = false
+                WHERE id =
+                    ANY($1::bigint[])
+                `,
+                [duplicateIds]
+            );
+
+            /*
+             * Remove the duplicate PDFs from Storage.
+             *
+             * Never remove the new canonical blobPath.
+             */
+            const duplicateBlobPaths =
+                duplicateReports
+                    .map(
+                        (report) =>
+                            report.blob_path
+                    )
+                    .filter(
+                        (
+                            path
+                        ): path is string =>
+                            Boolean(path) &&
+                            path !== blobPath
+                    );
+
+            if (
+                duplicateBlobPaths.length >
+                0
+            ) {
+                const {
+                    error:
+                        duplicateCleanupError,
+                } =
+                    await supabase.storage
+                        .from("reports")
+                        .remove(
+                            duplicateBlobPaths
+                        );
+
+                if (
+                    duplicateCleanupError
+                ) {
+                    console.warn(
+                        "Duplicate PDF cleanup failed:",
+                        duplicateCleanupError.message
+                    );
+                }
+            }
+
+            console.log(
+                `Cleaned up ${duplicateReports.length} duplicate report record(s)`
+            );
+        }
+
         return {
             publicId,
-            publicUrl: `${publicSiteUrl}/r/${publicId}`,
-            message: "Report revision updated successfully",
+            publicUrl:
+                `${publicSiteUrl}/r/${publicId}`,
+            message:
+                duplicateReports.length > 0
+                    ? `Report revision updated successfully; cleaned up ${duplicateReports.length} duplicate report(s)`
+                    : "Report revision updated successfully",
         };
     }
 
     /*
      * NEW REPORT
      *
-     * No active report exists for this device serial,
-     * so create its permanent public ID.
+     * No active record exists for this device,
+     * so create its permanent publicId.
      */
-    const publicId = crypto.randomUUID();
+    const publicId =
+        crypto.randomUUID();
 
     const blobPath =
         `${publicId}/${safeFileName}`;
@@ -280,10 +410,15 @@ export async function ingestReport({
     const { error: uploadError } =
         await supabase.storage
             .from("reports")
-            .upload(blobPath, pdfBuffer, {
-                contentType: "application/pdf",
-                upsert: false,
-            });
+            .upload(
+                blobPath,
+                pdfBuffer,
+                {
+                    contentType:
+                        "application/pdf",
+                    upsert: false,
+                }
+            );
 
     if (uploadError) {
         throw new Error(
@@ -302,7 +437,14 @@ export async function ingestReport({
                 filename,
                 blob_path
             )
-            VALUES ($1, $2, $3, $4, $5, $6)
+            VALUES (
+                $1,
+                $2,
+                $3,
+                $4,
+                $5,
+                $6
+            )
             `,
             [
                 publicId,
@@ -314,20 +456,20 @@ export async function ingestReport({
             ]
         );
     } catch (databaseError) {
-        /*
-         * If the database insert fails, remove the PDF
-         * that was just uploaded.
-         */
         await supabase.storage
             .from("reports")
-            .remove([blobPath]);
+            .remove([
+                blobPath,
+            ]);
 
         throw databaseError;
     }
 
     return {
         publicId,
-        publicUrl: `${publicSiteUrl}/r/${publicId}`,
-        message: "Report uploaded successfully",
+        publicUrl:
+            `${publicSiteUrl}/r/${publicId}`,
+        message:
+            "Report uploaded successfully",
     };
 }
