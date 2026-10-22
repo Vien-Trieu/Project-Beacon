@@ -1,4 +1,8 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+} from "react-router-dom";
 
 import HomePage from "./pages/public/HomePage";
 import ReportPage from "./pages/public/ReportPage";
@@ -6,6 +10,7 @@ import ReportPage from "./pages/public/ReportPage";
 import DashboardPage from "./pages/employee/DashboardPage";
 import ReportsPage from "./pages/employee/ReportsPage";
 import UploadReportPage from "./pages/employee/UploadReportPage";
+import EditReportPage from "./pages/employee/EditReportPage";
 
 import NotFoundPage from "./pages/errors/NotFoundPage";
 
@@ -39,6 +44,15 @@ function App() {
           element={
             <EmployeeAuthGate>
               <ReportsPage />
+            </EmployeeAuthGate>
+          }
+        />
+
+        <Route
+          path="/employee/reports/:publicId/edit"
+          element={
+            <EmployeeAuthGate>
+              <EditReportPage />
             </EmployeeAuthGate>
           }
         />

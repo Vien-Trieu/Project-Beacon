@@ -21,6 +21,7 @@ import {
 } from "../../auth/msalConfig";
 
 import {
+  deactivateEmployeeReport,
   getEmployeeReports,
   type EmployeeReport,
 } from "../../services/employeeReportService";
@@ -74,6 +75,11 @@ function ReportsPage() {
   const [copiedPublicId, setCopiedPublicId] =
     useState("");
 
+
+  const [
+    deactivatingPublicId,
+    setDeactivatingPublicId,
+  ] = useState("");
   const account = accounts[0];
 
   /* ==========================================
@@ -276,6 +282,89 @@ function ReportsPage() {
       );
     }
   }
+
+  /* ==========================================
+   EDIT REPORT
+   ========================================== */
+
+function handleEditReport(
+  publicId: string
+) {
+  navigate(
+    `/employee/reports/${encodeURIComponent(
+      publicId
+    )}/edit`
+  );
+}
+
+/* ==========================================
+   DEACTIVATE REPORT
+   ========================================== */
+
+async function handleDeactivateReport(
+  report: EmployeeReport
+) {
+  const confirmed = window.confirm(
+    `Deactivate report ${report.deviceSerial}?\n\n` +
+      "The customer link will stop working, " +
+      "but the report will remain available " +
+      "in the database for audit/recovery."
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    setError("");
+    setDeactivatingPublicId(
+      report.publicId
+    );
+
+    const accessToken =
+      await acquireBeaconToken();
+
+    if (!accessToken) {
+      return;
+    }
+
+    await deactivateEmployeeReport({
+      accessToken,
+      publicId: report.publicId,
+    });
+
+    /*
+     * Remove it from the current table immediately.
+     * The backend has already set active = false.
+     */
+    setReports((currentReports) =>
+      currentReports.filter(
+        (currentReport) =>
+          currentReport.publicId !==
+          report.publicId
+      )
+    );
+  } catch (deactivateError) {
+    console.error(
+      "Failed to deactivate report:",
+      deactivateError
+    );
+
+    if (
+      deactivateError instanceof Error
+    ) {
+      setError(
+        deactivateError.message
+      );
+    } else {
+      setError(
+        "Failed to deactivate report."
+      );
+    }
+  } finally {
+    setDeactivatingPublicId("");
+  }
+}
 
   /* ==========================================
      DATE FORMAT
@@ -613,6 +702,37 @@ function ReportsPage() {
                                 report.publicId
                                   ? "Copied!"
                                   : "Copy Link"}
+                              </button>
+
+                              <button
+                                type="button"
+                                className="reports-row-secondary"
+                                onClick={() =>
+                                  handleEditReport(
+                                    report.publicId
+                                  )
+                                }
+                              >
+                                Edit
+                              </button>
+
+                              <button
+                                type="button"
+                                className="reports-row-danger"
+                                disabled={
+                                  deactivatingPublicId ===
+                                  report.publicId
+                                }
+                                onClick={() =>
+                                  handleDeactivateReport(
+                                    report
+                                  )
+                                }
+                              >
+                                {deactivatingPublicId ===
+                                report.publicId
+                                  ? "Deactivating..."
+                                  : "Deactivate"}
                               </button>
                             </div>
                           </td>

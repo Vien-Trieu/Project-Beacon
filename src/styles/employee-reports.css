@@ -578,55 +578,90 @@
   }
 }
 
-@media (max-width: 650px) {
-  .reports-header-content {
-    padding: 18px;
+  @media (max-width: 650px) {
+    .reports-header-content {
+      padding: 18px;
+      align-items: flex-start;
+    }
 
-    align-items: flex-start;
+    .reports-logo {
+      width: 78px;
+    }
+
+    .reports-brand {
+      gap: 14px;
+    }
+
+    .reports-brand h1 {
+      font-size: 1.3rem;
+    }
+
+    .reports-header-actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .reports-secondary-button,
+    .reports-upload-button {
+      padding: 8px 10px;
+      font-size: 0.72rem;
+    }
+
+    .reports-content {
+      padding: 42px 18px 30px;
+    }
+
+    .reports-intro h2 {
+      font-size: 2.7rem;
+    }
+
+    .reports-search-card {
+      padding: 20px;
+    }
+
+    .reports-search-form {
+      grid-template-columns: 1fr;
+    }
+
+    .reports-results-heading {
+      align-items: flex-start;
+      flex-direction: column;
+    }
   }
 
-  .reports-logo {
-    width: 78px;
+  /* =========================================================
+    DEACTIVATE REPORT BUTTON
+    ========================================================= */
+
+  .reports-row-danger {
+    padding: 7px 10px;
+
+    border: 1px solid #dc2626;
+    border-radius: 6px;
+
+    background: #ffffff;
+    color: #dc2626;
+
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+      background-color 0.15s ease,
+      border-color 0.15s ease,
+      color 0.15s ease,
+      opacity 0.15s ease;
   }
 
-  .reports-brand {
-    gap: 14px;
+  .reports-row-danger:hover:not(:disabled) {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: #ffffff;
   }
 
-  .reports-brand h1 {
-    font-size: 1.3rem;
+  .reports-row-danger:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
   }
-
-  .reports-header-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .reports-secondary-button,
-  .reports-upload-button {
-    padding: 8px 10px;
-
-    font-size: 0.72rem;
-  }
-
-  .reports-content {
-    padding: 42px 18px 30px;
-  }
-
-  .reports-intro h2 {
-    font-size: 2.7rem;
-  }
-
-  .reports-search-card {
-    padding: 20px;
-  }
-
-  .reports-search-form {
-    grid-template-columns: 1fr;
-  }
-
-  .reports-results-heading {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-}
